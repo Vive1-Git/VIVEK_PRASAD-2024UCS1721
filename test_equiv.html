@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Equivalence Checker Test Suite</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 2rem; background: #fafaf8; }
+    h1 { margin-bottom: 1rem; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+    th, td { border: 1px solid #ddd; padding: .5rem .75rem; text-align: left; font-size: .9rem; }
+    th { background: #f0eee9; }
+    .pass { background: #e8faf4; color: #00805a; font-weight: 600; }
+    .fail { background: #fdf0ee; color: #c0392b; font-weight: 600; }
+    .mono { font-family: 'Consolas', monospace; }
+    #summary { margin-top: 1rem; font-size: 1.1rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Equivalence Checker — Test Suite</h1>
+  <p>Running comprehensive test cases to verify correctness...</p>
+  <div id="summary"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>RE₁</th>
+        <th>RE₂</th>
+        <th>Expected</th>
+        <th>Got</th>
+        <th>Status</th>
+        <th>Details</th>
+      </tr>
+    </thead>
+    <tbody id="results"></tbody>
+  </table>
+
+  <!-- Load the app's JS modules -->
+  <script src="js/palette.js?v=3"></script>
+  <script src="js/generator.js?v=3"></script>
+  <script src="js/equivalence.js?v=3"></script>
+
+  <script>
+    const TEST_CASES = [
+      // ════════════════════════════════════════════
+      // EQUIVALENT PAIRS  (expected: true)
+      // ════════════════════════════════════════════
+
+      // 1. Basic distributive law
+      { re1: 'a(b|c)',      re2: 'ab|ac',       expected: true,  desc: 'Distributive law' },
+
+      // 2. Commutativity of alternation
+      { re1: 'a|b',         re2: 'b|a',          expected: true,  desc: 'Alternation is commutative' },
+
+      // 3. Associativity of alternation
+      { re1: '(a|b)|c',     re2: 'a|(b|c)',      expected: true,  desc: 'Alternation is associative' },
+
+      // 4. Idempotent alternation
+      { re1: 'a|a',         re2: 'a',            expected: true,  desc: 'a|a = a (idempotent)' },
+
+      // 5. Star idempotent:  (a*)* = a*
+      { re1: '(a*)*',       re2: 'a*',           expected: true,  desc: '(a*)* = a*' },
+
+      // 6. Star of alternation
+      { re1: '(a|b)*',      re2: '(a*b*)*',      expected: true,  desc: '(a|b)* = (a*b*)*' },
+
+      // 7. a+ = aa*
+      { re1: 'a+',          re2: 'aa*',          expected: true,  desc: 'a+ = aa*' },
+
+      // 8. a? = (a|)   — optional vs alternation with empty
+      { re1: 'a?',          re2: 'a|',           expected: true,  desc: 'a? = a|ε' },
+
+      // 9. (ab)* with empty string
+      { re1: '(ab)*',       re2: '|(ab)(ab)*',   expected: true,  desc: '(ab)* = ε|(ab)(ab)*' },
+
+      // 10. Triple alternation commutativity
+      { re1: 'a|b|c',       re2: 'c|a|b',        expected: true,  desc: 'a|b|c = c|a|b' },
+
+      // 11. Single char identity
+      { re1: 'a',           re2: 'a',            expected: true,  desc: 'a = a (identity)' },
+
+      // 12. Concatenation with star
+      { re1: 'a*a*',        re2: 'a*',           expected: true,  desc: 'a*a* = a*' },
+
+      // 13. Right distributive
+      { re1: '(a|b)c',      re2: 'ac|bc',        expected: true,  desc: '(a|b)c = ac|bc' },
+
+      // 14. Star absorbs plus:  a*|a+ = a*
+      { re1: 'a*|a+',       re2: 'a*',           expected: true,  desc: 'a*|a+ = a*' },
+
+      // 15. Complex: (a|b)*(a|b) = (a|b)+
+      { re1: '(a|b)*(a|b)', re2: '(a|b)+',       expected: true,  desc: '(a|b)*(a|b) = (a|b)+' },
+
+      // ════════════════════════════════════════════
+      // NOT EQUIVALENT PAIRS  (expected: false)
+      // ════════════════════════════════════════════
+
+      // 16. Different single chars
+      { re1: 'a',           re2: 'b',            expected: false, desc: 'a ≠ b' },
+
+      // 17. Star vs plus (empty string difference)
+      { re1: 'a*',          re2: 'a+',           expected: false, desc: 'a* ≠ a+ (ε accepted by a* only)' },
+
+      // 18. Concatenation order matters
+      { re1: 'ab',          re2: 'ba',           expected: false, desc: 'ab ≠ ba' },
+
+      // 19. Different languages
+      { re1: 'a*b',         re2: 'ab*',          expected: false, desc: 'a*b ≠ ab*' },
+
+      // 20. Subset but not equal
+      { re1: 'a',           re2: 'a|b',          expected: false, desc: 'a ≠ a|b' },
+
+      // 21. Optional vs required
+      { re1: 'ab?',         re2: 'ab',           expected: false, desc: 'ab? ≠ ab (ab? also accepts a)' },
+
+      // 22. Different repetition structures
+      { re1: '(ab)*',       re2: 'a*b*',         expected: false, desc: '(ab)* ≠ a*b*' },
+
+      // 23. Extra character
+      { re1: 'abc',         re2: 'ab',           expected: false, desc: 'abc ≠ ab' },
+
+      // 24. Star of concat vs concat of stars
+      { re1: '(ab)*',       re2: '(ba)*',        expected: false, desc: '(ab)* ≠ (ba)*' },
+
+      // 25. Three-way not equivalent
+      { re1: 'a(b|c)d',     re2: 'abd',          expected: false, desc: 'a(b|c)d ≠ abd (missing acd)' },
+    ];
+
+    function runTests() {
+      const tbody = document.getElementById('results');
+      const summary = document.getElementById('summary');
+      let passed = 0;
+      let failed = 0;
+
+      TEST_CASES.forEach((tc, i) => {
+        let result, error;
+        try {
+          result = checkEquivalence(tc.re1, tc.re2);
+        } catch (e) {
+          error = e.message;
+        }
+
+        const got = error ? 'ERROR' : result.equivalent;
+        const ok = !error && got === tc.expected;
+        if (ok) passed++; else failed++;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td class="mono">${tc.re1}</td>
+          <td class="mono">${tc.re2}</td>
+          <td>${tc.expected ? '✅ Equiv' : '❌ Not Equiv'}</td>
+          <td>${error ? '⚠️ ' + error : (got ? '✅ Equiv' : '❌ Not Equiv')}</td>
+          <td class="${ok ? 'pass' : 'fail'}">${ok ? 'PASS' : 'FAIL'}</td>
+          <td>${tc.desc}${(!ok && result && result.counterExample) ? ' | counter: ' + result.counterExample : ''}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      summary.innerHTML = `Results: <span style="color:#00805a">${passed} passed</span>, <span style="color:#c0392b">${failed} failed</span> out of ${TEST_CASES.length} tests.`;
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

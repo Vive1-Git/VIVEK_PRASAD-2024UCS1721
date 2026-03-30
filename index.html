@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RegEx Visualizer — Generate · Visualize · Compare</title>
+  <meta name="description" content="An interactive tool to write regular expressions with a symbol palette, generate matching strings, and verify RE equivalence." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=70" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <!-- ───── Sticky Header ───── -->
+  <header class="header">
+    <div class="header__inner">
+      <div class="header__brand">
+        <div class="header__icon-wrap">
+          <div class="header__icon-inner">
+            <svg class="header__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M17 7H7v10"/><path d="M4 4h4"/><path d="M16 4h4"/><path d="M4 20h4"/><path d="M16 20h4"/></svg>
+          </div>
+        </div>
+        <div>
+          <h1 class="header__title">RegEx Visualizer</h1>
+          <p class="header__sub">Generate · Visualize · Compare</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ───── Main Single-Column Layout ───── -->
+  <main class="main">
+    <div class="grid">
+
+        <!-- Regex Editor Card -->
+        <div class="card" id="editor-card">
+          <div class="card__head">
+            <h2 class="card__title">Regular Expression</h2>
+            <p class="card__desc">Build your regex using the palette or type directly.</p>
+          </div>
+
+          <div class="input-group">
+            <label for="re-input" class="sr-only">Regular Expression</label>
+            <textarea id="re-input" class="re-textarea" rows="2" spellcheck="false" placeholder="e.g.  a(b|c)*d"></textarea>
+          </div>
+
+          <!-- Palette -->
+          <div class="palette" id="palette"></div>
+
+          <!-- Controls -->
+          <div class="controls-row">
+            <div class="count-picker">
+              <label for="string-count" class="count-label">Max strings</label>
+              <select id="string-count" class="count-select">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="30">30</option>
+                <option value="50">50</option>
+                <option value="80">80</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <button id="btn-generate" class="btn btn--primary">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Generate
+            </button>
+          </div>
+        </div>
+
+        <!-- Generated Strings (Collapsible) -->
+        <details class="card collapsible-card" id="results-card">
+          <summary class="collapsible-header">
+            <h2 class="card__title">Generated Strings</h2>
+            <span class="collapsible-meta" id="results-meta">Click Generate to see matching strings.</span>
+            <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div class="collapsible-body">
+            <div class="results-area" id="results-grid">
+              <div class="empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/><line x1="9" y1="17" x2="11" y2="17"/></svg>
+                <p class="empty-text">No strings generated yet</p>
+                <p class="empty-sub">Enter a regular expression and press Generate</p>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <!-- Equivalence Checker Card -->
+        <div class="card" id="equiv-card">
+          <div class="card__head">
+            <h2 class="card__title">Equivalence Checker</h2>
+            <p class="card__desc">Compare two expressions to see if they describe the same language.</p>
+          </div>
+
+          <div class="equiv-inputs">
+            <div class="equiv-field">
+              <label for="equiv-re1" class="field-label">Expression A</label>
+              <div class="equiv-input-wrap">
+                <input type="text" id="equiv-re1" class="field-input" placeholder="e.g.  a(b|c)" spellcheck="false" />
+              </div>
+            </div>
+            <span class="equiv-vs">vs</span>
+            <div class="equiv-field">
+              <label for="equiv-re2" class="field-label">Expression B</label>
+              <div class="equiv-input-wrap">
+                <input type="text" id="equiv-re2" class="field-input" placeholder="e.g.  ab|ac" spellcheck="false" />
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-equiv" class="btn btn--outline">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Check Equivalence
+          </button>
+
+          <div class="equiv-result" id="equiv-result"></div>
+        </div>
+
+    </div>
+  </main>
+
+  <!-- ───── Scripts ───── -->
+  <script src="js/palette.js?v=70"></script>
+  <script src="js/generator.js?v=70"></script>
+  <script src="js/equivalence.js?v=70"></script>
+  <script src="js/dfa-diagram.js?v=70"></script>
+  <script src="js/app.js?v=70"></script>
+</body>
+</html>
