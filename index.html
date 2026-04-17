@@ -1,131 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RegEx Visualizer — Generate · Visualize · Compare</title>
-  <meta name="description" content="An interactive tool to write regular expressions with a symbol palette, generate matching strings, and verify RE equivalence." />
+  <title>RE Studio — Regular Expression Analysis Tool</title>
+  <meta name="description"
+    content="Build regular expressions, generate accepted strings, and verify equivalence between two REs using DFA minimization." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=70" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=402" />
 </head>
-<body>
-  <div class="bg-glow"></div>
 
-  <!-- ───── Sticky Header ───── -->
-  <header class="header">
-    <div class="header__inner">
-      <div class="header__brand">
-        <div class="header__icon-wrap">
-          <div class="header__icon-inner">
-            <svg class="header__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10"/><path d="M17 7H7v10"/><path d="M4 4h4"/><path d="M16 4h4"/><path d="M4 20h4"/><path d="M16 20h4"/></svg>
-          </div>
-        </div>
-        <div>
-          <h1 class="header__title">RegEx Visualizer</h1>
-          <p class="header__sub">Generate · Visualize · Compare</p>
-        </div>
+<body>
+
+  <!-- ── Top Bar ── -->
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="topbar__brand">
+        <svg class="topbar__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 1v4" />
+          <path d="M12 19v4" />
+          <path d="M1 12h4" />
+          <path d="M19 12h4" />
+        </svg>
+        <span class="topbar__title">RE Studio</span>
       </div>
+      <!-- Tab Navigation -->
+      <nav class="tab-nav" id="tab-nav">
+        <button class="tab-nav__btn tab-nav__btn--active" data-tab="generator">Generate Expression Strings</button>
+        <button class="tab-nav__btn" data-tab="equivalence">Equivalence Checker</button>
+      </nav>
     </div>
   </header>
 
-  <!-- ───── Main Single-Column Layout ───── -->
-  <main class="main">
-    <div class="grid">
+  <main class="content">
 
-        <!-- Regex Editor Card -->
-        <div class="card" id="editor-card">
-          <div class="card__head">
-            <h2 class="card__title">Regular Expression</h2>
-            <p class="card__desc">Build your regex using the palette or type directly.</p>
+    <!-- ═══════ PAGE 1: Generate Strings ═══════ -->
+    <section class="page page--active" id="page-generator">
+
+      <!-- Expression Editor -->
+      <div class="box" id="editor-card">
+        <h2 class="box__title">Regular Expression</h2>
+        <p class="box__sub">Write your regex below or click symbols from the palette.</p>
+
+        <div class="input-group">
+          <label for="re-input" class="sr-only">Regular Expression</label>
+          <textarea id="re-input" class="re-textarea" rows="2" spellcheck="false" placeholder="e.g.  (b+c)(c+d)"
+            autocomplete="off"></textarea>
+        </div>
+
+        <!-- Palette -->
+        <div class="palette" id="palette"></div>
+
+        <!-- Controls -->
+        <div class="controls-row">
+          <div class="count-picker">
+            <label for="string-count" class="count-label">Max strings</label>
+            <select id="string-count" class="count-select">
+              <option value="10">10</option>
+              <option value="20" selected>20</option>
+              <option value="30">30</option>
+              <option value="50">50</option>
+              <option value="80">80</option>
+              <option value="100">100</option>
+            </select>
           </div>
+          <button id="btn-generate" class="btn btn--primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Generate
+          </button>
+          <button id="btn-test-string" class="btn btn--outline">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 11l3 3L22 4" />
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+            Test String
+          </button>
+        </div>
 
-          <div class="input-group">
-            <label for="re-input" class="sr-only">Regular Expression</label>
-            <textarea id="re-input" class="re-textarea" rows="2" spellcheck="false" placeholder="e.g.  a(b|c)*d"></textarea>
+        <!-- Inline Membership Test Panel (hidden until 'Test String' clicked) -->
+        <div class="membership-panel" id="membership-panel" style="display:none;">
+          <div class="membership-panel__header">
+            <span class="membership-panel__title">String Membership Test</span>
+            <button type="button" class="membership-panel__close" id="membership-close" title="Close">&times;</button>
           </div>
-
-          <!-- Palette -->
-          <div class="palette" id="palette"></div>
-
-          <!-- Controls -->
-          <div class="controls-row">
-            <div class="count-picker">
-              <label for="string-count" class="count-label">Max strings</label>
-              <select id="string-count" class="count-select">
-                <option value="10">10</option>
-                <option value="20" selected>20</option>
-                <option value="30">30</option>
-                <option value="50">50</option>
-                <option value="80">80</option>
-                <option value="100">100</option>
-              </select>
+          <div class="membership-row">
+            <div class="membership-input-wrap">
+              <label for="membership-input" class="sr-only">Test String</label>
+              <input type="text" id="membership-input" class="membership-input" placeholder="Type any string or ε for empty…"
+                spellcheck="false" autocomplete="off" />
             </div>
-            <button id="btn-generate" class="btn btn--primary">
-              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Generate
+            <button type="button" id="btn-insert-epsilon" class="palette__btn" data-tip="Insert ε (empty string)" style="font-size:.88rem;padding:.35rem .55rem;">ε</button>
+            <button id="btn-check-membership" class="btn btn--primary btn--sm">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Check
             </button>
           </div>
+          <div id="membership-result"></div>
+        </div>
+      </div>
+
+      <!-- Generated Strings -->
+      <div class="box" id="results-card">
+        <div class="box__header-row">
+          <h2 class="box__title">Generated Strings</h2>
+          <span class="box__meta" id="results-meta">Hit Generate to see matching strings.</span>
+        </div>
+        <div class="results-area" id="results-grid">
+          <div class="empty-state">
+            <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="9" y1="9" x2="15" y2="9" />
+              <line x1="9" y1="13" x2="13" y2="13" />
+              <line x1="9" y1="17" x2="11" y2="17" />
+            </svg>
+            <p class="empty-text">No strings generated yet</p>
+            <p class="empty-sub">Enter a regular expression and press Generate</p>
+          </div>
+        </div>
+      </div>
+
+
+
+    </section>
+
+    <!-- ═══════ PAGE 2: Equivalence Checker ═══════ -->
+    <section class="page" id="page-equivalence">
+
+      <!-- Enter Expressions -->
+      <div class="box" id="equiv-card">
+        <h2 class="box__title">Equivalence Checker</h2>
+        <p class="box__sub">Enter two regular expressions below. We'll build minimized DFAs and compare them.</p>
+
+        <div class="equiv-inputs">
+          <div class="equiv-field">
+            <label for="equiv-re1" class="field-label">Expression 1</label>
+            <div class="equiv-input-wrap">
+              <input type="text" id="equiv-re1" class="field-input" placeholder="e.g.  a(b+c)" spellcheck="false"
+                autocomplete="off" value="" />
+            </div>
+          </div>
+          <span class="equiv-vs">vs</span>
+          <div class="equiv-field">
+            <label for="equiv-re2" class="field-label">Expression 2</label>
+            <div class="equiv-input-wrap">
+              <input type="text" id="equiv-re2" class="field-input" placeholder="e.g.  ab+ac" spellcheck="false"
+                autocomplete="off" value="" />
+            </div>
+          </div>
         </div>
 
-        <!-- Generated Strings (Collapsible) -->
-        <details class="card collapsible-card" id="results-card">
-          <summary class="collapsible-header">
-            <h2 class="card__title">Generated Strings</h2>
-            <span class="collapsible-meta" id="results-meta">Click Generate to see matching strings.</span>
-            <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </summary>
-          <div class="collapsible-body">
-            <div class="results-area" id="results-grid">
-              <div class="empty-state">
-                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="13" y2="13"/><line x1="9" y1="17" x2="11" y2="17"/></svg>
-                <p class="empty-text">No strings generated yet</p>
-                <p class="empty-sub">Enter a regular expression and press Generate</p>
-              </div>
-            </div>
-          </div>
-        </details>
+        <!-- Palette (same as Generator) -->
+        <div class="palette" id="equiv-palette"></div>
 
-        <!-- Equivalence Checker Card -->
-        <div class="card" id="equiv-card">
-          <div class="card__head">
-            <h2 class="card__title">Equivalence Checker</h2>
-            <p class="card__desc">Compare two expressions to see if they describe the same language.</p>
-          </div>
+        <button id="btn-equiv" class="btn btn--primary" style="margin-top:.75rem">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Check Equivalence
+        </button>
+      </div>
 
-          <div class="equiv-inputs">
-            <div class="equiv-field">
-              <label for="equiv-re1" class="field-label">Expression A</label>
-              <div class="equiv-input-wrap">
-                <input type="text" id="equiv-re1" class="field-input" placeholder="e.g.  a(b|c)" spellcheck="false" />
-              </div>
-            </div>
-            <span class="equiv-vs">vs</span>
-            <div class="equiv-field">
-              <label for="equiv-re2" class="field-label">Expression B</label>
-              <div class="equiv-input-wrap">
-                <input type="text" id="equiv-re2" class="field-input" placeholder="e.g.  ab|ac" spellcheck="false" />
-              </div>
-            </div>
-          </div>
+      <!-- Result area: DFAs, tables, divergence all rendered here -->
+      <div id="equiv-result"></div>
 
-          <button id="btn-equiv" class="btn btn--outline">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Check Equivalence
-          </button>
+    </section>
 
-          <div class="equiv-result" id="equiv-result"></div>
-        </div>
-
-    </div>
   </main>
 
-  <!-- ───── Scripts ───── -->
-  <script src="js/palette.js?v=70"></script>
-  <script src="js/generator.js?v=70"></script>
-  <script src="js/equivalence.js?v=70"></script>
-  <script src="js/dfa-diagram.js?v=70"></script>
-  <script src="js/app.js?v=70"></script>
+  <!-- Scripts -->
+  <script src="js/palette.js?v=402"></script>
+  <script src="js/generator.js?v=402"></script>
+  <script src="js/equivalence.js?v=402"></script>
+  <script src="js/dfa-diagram.js?v=402"></script>
+  <script src="js/app.js?v=402"></script>
 </body>
+
 </html>

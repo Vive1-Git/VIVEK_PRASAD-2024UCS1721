@@ -6,20 +6,19 @@ const PALETTE_DATA = [
   {
     label: 'Operators',
     items: [
-      { symbol: '|',  tip: 'Alternation (OR)', displayHtml: '<span class="re-or">+</span>' },
-      { symbol: '()', tip: 'Grouping' },
+      { symbol: '|', tip: 'Union (OR)', displayHtml: '+' },
+      { symbol: '()', tip: 'Grouping parentheses', displayHtml: '( )' },
     ]
   },
   {
     label: 'Quantifiers',
     items: [
       { symbol: '*', tip: 'Zero or more (Kleene star)', displayHtml: 'a<sup class="re-sup">*</sup>' },
-      { symbol: '+', tip: 'One or more',                displayHtml: 'a<sup class="re-sup">+</sup>' },
+      { symbol: '⁺', tip: 'One or more (Kleene plus)', displayHtml: 'a<sup class="re-sup">+</sup>' },
     ]
   },
   {
     label: 'Letters',
-    type: 'letters',
     items: 'abcdefghijklmnopqrstuvwxyz'.split('').map(ch => ({
       symbol: ch,
       tip: `Letter ${ch}`
@@ -34,22 +33,24 @@ const PALETTE_DATA = [
   }
 ];
 
-/** Track capitalize state */
-let _isCapitalized = false;
-
 /**
  * Build the palette UI inside the container element.
  * @param {HTMLElement} container
  * @param {HTMLTextAreaElement} textarea
  */
-function buildPalette(container, textarea) {
+function buildPalette(container, textareaOrGetter) {
   container.innerHTML = '';
+  let isUpperCase = false; // track letter case state
+  // Support both a direct element and a getter function
+  const getTarget = typeof textareaOrGetter === 'function'
+    ? textareaOrGetter
+    : () => textareaOrGetter;
 
   PALETTE_DATA.forEach(group => {
     const groupEl = document.createElement('div');
     groupEl.className = 'palette__group';
 
-    /* ── Header row (label + optional toggle) ── */
+    /* ── Header row ── */
     const headerRow = document.createElement('div');
     headerRow.className = 'palette__header-row';
 
@@ -58,34 +59,49 @@ function buildPalette(container, textarea) {
     label.textContent = group.label;
     headerRow.appendChild(label);
 
-    /* Add capitalize toggle for the Letters group */
-    if (group.type === 'letters') {
-      const toggleWrap = document.createElement('label');
-      toggleWrap.className = 'palette__toggle-wrap';
-      toggleWrap.setAttribute('data-tip', 'Toggle uppercase / lowercase');
+    // Add case toggle for Letters group
+    if (group.label === 'Letters') {
+      const toggleWrap = document.createElement('div');
+      toggleWrap.className = 'palette__case-switch';
 
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.className = 'palette__toggle-input';
-      checkbox.checked = _isCapitalized;
+      const labelLeft = document.createElement('span');
+      labelLeft.className = 'palette__case-label palette__case-label--active';
+      labelLeft.textContent = 'a';
 
-      const slider = document.createElement('span');
-      slider.className = 'palette__toggle-slider';
+      const track = document.createElement('button');
+      track.type = 'button';
+      track.className = 'palette__case-track';
+      track.title = 'Switch between lowercase and uppercase';
+      const knob = document.createElement('span');
+      knob.className = 'palette__case-knob';
+      track.appendChild(knob);
 
-      const toggleLabel = document.createElement('span');
-      toggleLabel.className = 'palette__toggle-label';
-      toggleLabel.textContent = _isCapitalized ? 'A-Z' : 'a-z';
+      const labelRight = document.createElement('span');
+      labelRight.className = 'palette__case-label';
+      labelRight.textContent = 'A';
 
-      toggleWrap.appendChild(checkbox);
-      toggleWrap.appendChild(slider);
-      toggleWrap.appendChild(toggleLabel);
-      headerRow.appendChild(toggleWrap);
-
-      checkbox.addEventListener('change', () => {
-        _isCapitalized = checkbox.checked;
-        toggleLabel.textContent = _isCapitalized ? 'A-Z' : 'a-z';
-        updateLetterButtons(container);
+      track.addEventListener('click', () => {
+        isUpperCase = !isUpperCase;
+        track.classList.toggle('palette__case-track--on', isUpperCase);
+        labelLeft.classList.toggle('palette__case-label--active', !isUpperCase);
+        labelRight.classList.toggle('palette__case-label--active', isUpperCase);
+        // Update label text to say current mode
+        label.textContent = isUpperCase ? 'Letters (Uppercase)' : 'Letters';
+        // Update all letter buttons
+        const letterBtns = groupEl.querySelectorAll('.palette__btn[data-letter]');
+        letterBtns.forEach(btn => {
+          const base = btn.getAttribute('data-letter');
+          const ch = isUpperCase ? base.toUpperCase() : base;
+          btn.textContent = ch;
+          btn.setAttribute('data-tip', `Letter ${ch}`);
+          btn.setAttribute('data-insert', ch);
+        });
       });
+
+      toggleWrap.appendChild(labelLeft);
+      toggleWrap.appendChild(track);
+      toggleWrap.appendChild(labelRight);
+      headerRow.appendChild(toggleWrap);
     }
 
     groupEl.appendChild(headerRow);
@@ -99,30 +115,27 @@ function buildPalette(container, textarea) {
       btn.type = 'button';
       btn.className = 'palette__btn';
 
-      const displayChar = (group.type === 'letters' && _isCapitalized)
-        ? item.symbol.toUpperCase()
-        : item.symbol;
-
       if (item.displayHtml) {
         btn.innerHTML = item.displayHtml;
       } else {
-        btn.textContent = displayChar;
+        btn.textContent = item.symbol;
       }
       btn.setAttribute('data-tip', item.tip);
 
-      if (group.type === 'letters') {
-        btn.classList.add('palette__btn--letter');
-        btn.setAttribute('data-base', item.symbol);
+      // Mark letter buttons for toggle
+      if (group.label === 'Letters') {
+        btn.setAttribute('data-letter', item.symbol);
+        btn.setAttribute('data-insert', item.symbol);
       }
 
       btn.addEventListener('click', () => {
+        const textarea = getTarget();
+        if (!textarea) return;
         let insertText;
-        if (item.insert !== undefined) {
-          insertText = item.insert;
-        } else if (group.type === 'letters' && _isCapitalized) {
-          insertText = item.symbol.toUpperCase();
+        if (group.label === 'Letters') {
+          insertText = btn.getAttribute('data-insert');
         } else {
-          insertText = item.symbol;
+          insertText = item.insert !== undefined ? item.insert : item.symbol;
         }
         insertAtCursor(textarea, insertText);
         textarea.focus();
@@ -137,25 +150,13 @@ function buildPalette(container, textarea) {
 }
 
 /**
- * Update all letter buttons when capitalize is toggled.
- */
-function updateLetterButtons(container) {
-  container.querySelectorAll('.palette__btn--letter').forEach(btn => {
-    const base = btn.getAttribute('data-base');
-    const display = _isCapitalized ? base.toUpperCase() : base;
-    btn.textContent = display;
-    btn.setAttribute('data-tip', `Letter ${display}`);
-  });
-}
-
-/**
  * Insert text at the current cursor position in a textarea.
  */
 function insertAtCursor(textarea, text) {
   const start = textarea.selectionStart;
-  const end   = textarea.selectionEnd;
+  const end = textarea.selectionEnd;
   const before = textarea.value.substring(0, start);
-  const after  = textarea.value.substring(end);
+  const after = textarea.value.substring(end);
   textarea.value = before + text + after;
 
   // If we inserted "()", place cursor inside the parens

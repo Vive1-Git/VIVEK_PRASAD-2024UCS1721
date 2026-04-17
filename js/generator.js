@@ -77,6 +77,7 @@ function tokenize(pattern) {
       case '|':  tokens.push({ type: T.PIPE }); break;
       case '*':  tokens.push({ type: T.STAR }); break;
       case '+':  tokens.push({ type: T.PLUS }); break;
+      case '⁺':  tokens.push({ type: T.PLUS }); break;
       case '?':  tokens.push({ type: T.QUESTION }); break;
       case '(':  tokens.push({ type: T.LPAREN }); break;
       case ')':  tokens.push({ type: T.RPAREN }); break;
@@ -88,6 +89,7 @@ function tokenize(pattern) {
       case '.':  tokens.push({ type: T.DOT }); break;
       case '^':  tokens.push({ type: T.CARET }); break;
       case '$':  tokens.push({ type: T.DOLLAR }); break;
+      case 'ε':  break; // epsilon = empty string, skip (identity for concatenation)
       default:   tokens.push({ type: T.CHAR, value: c }); break;
     }
     i++;
